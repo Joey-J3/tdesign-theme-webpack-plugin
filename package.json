@@ -1,0 +1,29 @@
+{
+  "name": "theme-webpack-plugin",
+  "version": "1.0.0",
+  "description": "A webpack plugin for applying theme based on the design token",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "td",
+    "tencent-design",
+    "less",
+    "lessjs",
+    "css",
+    "theme",
+    "dynamic-theme",
+    "webpack"
+  ],
+  "author": "Joey",
+  "license": "ISC",
+  "peerDependencies": {
+    "webpack": "^4.0.0 || ^5.0.0"
+  },
+  "dependencies": {
+    "less": "^4.1.2",
+    "less-plugin-npm-import": "^2.1.0",
+    "postcss": "^8.4.21"
+  }
+}
