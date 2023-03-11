@@ -1,7 +1,7 @@
 {
   "name": "theme-webpack-plugin",
   "version": "1.0.0",
-  "description": "A webpack plugin for applying theme based on the design token",
+  "description": "A webpack plugin designed to customize styles with a yuheng theme, which overrides the default styles of the tdesign light theme.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
