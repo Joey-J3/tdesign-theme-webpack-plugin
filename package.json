@@ -25,6 +25,7 @@
     "hash.js": "^1.1.7",
     "less": "^4.1.2",
     "less-plugin-npm-import": "^2.1.0",
-    "postcss": "^8.4.21"
+    "postcss": "^8.4.21",
+    "postcss-minify": "^1.1.0"
   }
 }

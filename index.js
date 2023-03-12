@@ -89,12 +89,10 @@ class ThemePlugin {
       return cssCache;
     }
     hashCache = hashCode;
-    const results = await postcss([reducePlugin]).process(css, {
+    const results = await postcss([reducePlugin, require('postcss-minify')]).process(css, {
       from: sourceFrom,
     });
-    const minifiedCss = minifyCss(results.css);
-
-    return minifiedCss;
+    return results.css;
   }
 
   generateIndexContent(assets, compilation) {
@@ -145,78 +143,3 @@ class ThemePlugin {
 
 
 module.exports = ThemePlugin;
-
-function minifyCss(css) {
-  // Removed all comments and empty lines
-  css = css
-    .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "")
-    .replace(/^\s*$(?:\r\n?|\n)/gm, "");
-
-  /*
-  Converts from
-
-    .abc,
-    .def {
-      color: red;
-      background: blue;
-      border: grey;
-    }
-
-    to
-
-    .abc,
-    .def {color: red;
-      background: blue;
-      border: grey;
-    }
-
-  */
-  css = css.replace(/\{(\r\n?|\n)\s+/g, "{");
-
-  /*
-  Converts from
-
-  .abc,
-  .def {color: red;
-  }
-
-  to
-
-  .abc,
-  .def {color: red;
-    background: blue;
-    border: grey;}
-
-  */
-  css = css.replace(/;(\r\n?|\n)\}/g, ";}");
-
-  /*
-  Converts from
-
-  .abc,
-  .def {color: red;
-    background: blue;
-    border: grey;}
-
-  to
-
-  .abc,
-  .def {color: red;background: blue;border: grey;}
-
-  */
-  css = css.replace(/;(\r\n?|\n)\s+/g, ";");
-
-  /*
-Converts from
-
-.abc,
-.def {color: red;background: blue;border: grey;}
-
-to
-
-.abc, .def {color: red;background: blue;border: grey;}
-
-*/
-  css = css.replace(/,(\r\n?|\n)[.]/g, ", .");
-  return css;
-}
