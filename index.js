@@ -5,16 +5,11 @@ const fs = require("fs");
 const postcss = require('postcss');
 const less = require('less');
 const NpmImportPlugin = require('less-plugin-npm-import');
-const hash = require('hash.js');
+const generateThemePalette = require('./src/utils/generateThemePalette');
+const { generateColorMap, combineLess, compileAllLessFilesToCss } = require('./src/utils');
 
-const exportFileName = 'yuheng-color.css';
-const stylesDir = path.join(__dirname, "./src/styles");
-const sourceFrom = path.join(__dirname, "./src/styles/index.less");
+const exportFileName = 'custom-theme.css';
 const defaultOutputDir = '/css';
-
-/* 缓存优化二次构建速度 */
-let cssCache = '';
-let hashCache = '';
 
 const reducePlugin = postcss.plugin('reducePlugin', () => (css) => {
   css.walkAtRules(atRule => {
@@ -24,17 +19,56 @@ const reducePlugin = postcss.plugin('reducePlugin', () => (css) => {
   css.walkComments(c => c.remove());
 });
 
+const validVariables = [
+  '@brand-color',
+  '@success-color',
+  '@error-color',
+  '@warning-color'
+]
+
+
+/**
+ * 1. Generate theme palette for valid variables
+ * 2. Use tdesign default variables and custom variables
+ * 3. Override tdesign component styles
+ */
 class ThemePlugin {
+  /**
+   * 
+   * @param {{
+   *  varFile: custom variables file
+   * }} options 
+   */
   constructor(options = {}) {
     const defaultOptions = {
-      tdLibDir: path.join(__dirname, "../../node_modules/tdesign-vue"),
+      tdDir: path.join(__dirname, "../../node_modules/tdesign-vue"),
       indexFileName: "index.html",
       generateOnce: false,
       output: defaultOutputDir,
+      entry: path.join(__dirname, "./src/styles/index.less"),
+      stylesDir: path.join(__dirname, "./src/styles"),
+      themeVariables: ['@brand-color']
     };
-    const tdLibStylesFile = options.tdLibStylesFile || path.join(options.tdLibDir || defaultOptions.tdLibDir, "./dist/tdesign.min.css");
-    this.options = Object.assign(defaultOptions, options, { stylesDir, tdLibStylesFile });
+    this.options = Object.assign(defaultOptions, options);
+    this.initOptions()
     this.version = webpack.version;
+  }
+
+  initOptions() {
+    let { varFile, tdStylesDir, themeVariables, tdDir } = this.options
+    varFile = varFile || path.join(tdDir, "./esm/_common/style/web/_variables.less"),
+
+    tdStylesDir = tdStylesDir || path.join(tdDir, './esm/_common/style/web')
+    themeVariables = validVariables.filter(validVar => themeVariables.includes(validVar))
+    const nodeModulesPath = path.join(
+      tdDir.slice(0, tdDir.indexOf("node_modules")),
+      "./node_modules"
+    );
+    this.options = {
+      ...this.options,
+      varFile,
+      tdStylesDir, themeVariables, nodeModulesPath
+    }
   }
 
   apply(compiler) {
@@ -53,7 +87,6 @@ class ThemePlugin {
     }
     try {
       const css = await this.generateCssContent();
-      cssCache = css;
       if (generateOnce) {
         this.colors = css;
       }
@@ -65,34 +98,66 @@ class ThemePlugin {
   };
 
   /**
-   * transform all less file into css file
+   * generate color palette for every theme variables
+   * @returns {Object} - return color palette key-value map
+   * @example { '--td-brand-color-1': '#123456' }
+   */
+  generateVarContent() {
+    const varFileContent = fs.readFileSync(this.options.varFile).toString()
+    const mappings = generateColorMap(varFileContent);
+    const content = Object.entries(mappings).reduce((prev, [varName, color]) => {
+      if (!this.options.themeVariables.includes(varName)) {
+        return prev
+      }
+      // theme palette color
+      const palettes = generateThemePalette(color)
+      const name = varName.replace('@', '')
+      palettes.forEach((c, i) => {
+        prev += `--td-${name}-${i+1}: ${c};`
+      })
+      const actionColor = `
+      --td-${name}-light: var(--td-${name}-1);
+      --td-${name}-focus: var(--td-${name}-2);
+      --td-${name}-disabled: var(--td-${name}-3);
+      --td-${name}-hover: var(--td-${name}-4);
+      --td-${name}: var(--td-${name}-5);
+      --td-${name}-active: var(--td-${name}-6);
+      `
+      return prev + actionColor
+    }, "")
+    return `:root,:root[theme-mode="light"],:root[theme-mode="dark"] {${content}}`
+  }
+
+  getVarMappings() {
+    const { varFile, nodeModulesPath } = this.options
+    const varFileContent = combineLess(varFile, nodeModulesPath)
+    return generateColorMap(varFileContent)
+  }
+
+  /**
+   * transform all less file and bundle into a css file
    * @returns {Promise<string>} css string promise
    */
   async generateCssContent() {
-    const { stylesDir, tdLibStylesFile } = this.options;
-    const fileContent = fs.readFileSync(sourceFrom).toString();
-    const css = await less.render(fileContent, {
-      paths: [tdLibStylesFile, stylesDir],
-      filename: path.resolve(sourceFrom),
+    let { stylesDir, tdStylesDir, varFile } = this.options
+    const mappings = this.getVarMappings()
+    const themePaletteContent = this.generateVarContent()
+    const varsContent = Object.entries(mappings).reduce((prev, [varName, color]) => prev + `${varName}: ${color};`, "")
+    const userCustomCss = await compileAllLessFilesToCss(
+      stylesDir,
+      tdStylesDir,
+      mappings,
+      varFile
+    );
+    let results = await less.render(`${themePaletteContent}\n${varsContent}`, {
+      paths: [tdStylesDir].concat(stylesDir),
       javascriptEnabled: true,
       plugins: [new NpmImportPlugin({ prefix: "~" })],
     })
-      .then(res => res.css)
-      .catch(err => {
-        console.error(`Error occurred compiling file ${sourceFrom}`);
-        console.error("Error", err);
-        return "\n";
-      });
-
-    const hashCode = hash.sha256().update(css).digest('hex');
-    if (hashCode === hashCache) {
-      return cssCache;
-    }
-    hashCache = hashCode;
-    const results = await postcss([reducePlugin, require('postcss-minify')]).process(css, {
-      from: sourceFrom,
-    });
-    return results.css;
+    let css = `${results.css}\n${userCustomCss}`
+    return Promise.resolve(postcss([reducePlugin, require('postcss-minify')]).process(css, {
+      from: path.join(tdStylesDir, 'index.less'),
+    })).then(res => res.css)
   }
 
   generateIndexContent(assets, compilation) {
@@ -103,7 +168,7 @@ class ThemePlugin {
       const index = assets[this.options.indexFileName];
       const content = index.source();
 
-      if (!content.match(/\/yuheng-color\.less/g)) {
+      if (!content.match(/\/override-tdesign-style\.css/g)) {
         const less = `
           <link rel="stylesheet" href="/${exportFileName}" />
           <script>
