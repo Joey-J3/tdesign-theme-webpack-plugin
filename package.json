@@ -1,7 +1,7 @@
 {
   "name": "tdesign-theme-webpack-plugin",
   "version": "1.0.2",
-  "description": "A webpack plugin designed to customize styles with a yuheng theme, which overrides the default styles of the tdesign light theme.",
+  "description": "A webpack plugin designed to generate color palette and override the default styles of the tdesign light theme.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -16,16 +16,22 @@
     "dynamic-theme",
     "webpack"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joey-J3/tdesign-theme-webpack-plugin.git"
+  },
   "author": "Joey",
   "license": "ISC",
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },
   "dependencies": {
+    "glob": "^9.2.1",
     "hash.js": "^1.1.7",
     "less": "^4.1.2",
     "less-plugin-npm-import": "^2.1.0",
     "postcss": "^8.4.21",
-    "postcss-minify": "^1.1.0"
+    "postcss-minify": "^1.1.0",
+    "simpler-color": "^1.0.1"
   }
 }

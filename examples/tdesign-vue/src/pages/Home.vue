@@ -2,7 +2,6 @@
   <div>
     <t-space direction="vertical">
       <t-tabs v-model="value">
-        <!-- 默认插槽 和 具名插槽（panel）都是用来渲染面板内容 -->
         <t-tab-panel value="first" label="选项卡1" :destroyOnHide="false">
           <div style="margin: 10px">
             <t-space>
@@ -18,7 +17,7 @@
         </t-tab-panel>
         <t-tab-panel value="second" label="选项卡2" :destroyOnHide="false">
           <p slot="panel" style="padding: 25px">
-            选项卡2的内容，使用 t-tab-panel 渲染
+            <t-button variant="text" theme="primary">link to</t-button>
           </p>
         </t-tab-panel>
       </t-tabs>
@@ -59,15 +58,10 @@ export default {
       data,
       columns: [
         {
-          // 序号列，设置 colKey = serial-number 即可
           colKey: "serial-number",
           title: "序号",
           width: "100",
-          // 对齐方式
           align: "center",
-          // 设置列类名
-          className: "custom-column-class-name",
-          // 设置列属性
           attrs: {
             "data-id": "first-column",
             style: {},
@@ -94,26 +88,9 @@ export default {
           colKey: "detail.position",
           title: "详情信息",
           width: 200,
-          /**
-           * 1.内容超出时，是否显示省略号。值为 true，则浮层默认显示单元格内容；
-           * 2.值类型为 Function 则自定义浮层显示内容；
-           * 3.值类型为 Object，则自动透传属性到 Popup 组件。
-           */
           ellipsis: true,
           ellipsisTitle: false,
 
-          // 透传省略内容浮层 Popup 组件全部特性，示例代码有效，勿删！！！
-          // ellipsis: { placement: 'bottom', destroyOnClose: false },
-
-          // 完全自定义 ellipsis 浮层的样式和内容，示例代码有效，勿删！！！
-          // ellipsis: (h, {
-          //   row, col, rowIndex, colIndex,
-          // }) => {
-          //   if (rowIndex % 2) {
-          //     return <div>is even row {rowIndex + 1}, with data {row.detail.position}</div>;
-          //   }
-          //   return <div>is odd row {rowIndex + 1}, with data {row.detail.position}</div>;
-          // },
         },
       ],
       pagination: {

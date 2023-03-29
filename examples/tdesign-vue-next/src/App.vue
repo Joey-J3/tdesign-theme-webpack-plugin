@@ -1,8 +1,7 @@
 <template>
-  <div id="app">
-    <t-layout>
+  <t-layout>
     <t-aside>
-      <t-menu>
+      <t-menu :theme="mode">
         <t-menu-item value="0">
           <template #icon>
             <t-icon name="app" />
@@ -34,32 +33,64 @@
       </t-menu>
     </t-aside>
     <t-layout>
+      <t-header>
+        <t-button shape="circle" @click="switchThemeMode">
+          <template #icon>
+            <t-icon name="poweroff" />
+          </template>
+        </t-button>
+      </t-header>
       <t-content>
         <Home />
       </t-content>
     </t-layout>
   </t-layout>
-  </div>
 </template>
 
-<script>
-import Home from '@/pages/Home.vue'
+<script setup>
+import { ref } from 'vue'
+import Home from './pages/Home.vue'
 
-export default {
-  name: 'App',
-  components: {
-    Home
+const mode = ref('light')
+
+function switchThemeMode() {
+  if (mode.value === 'light') {
+    // 设置暗色模式
+    document.documentElement.setAttribute('theme-mode', 'dark')
+    mode.value = 'dark'
+  } else {
+    // 重置为浅色模式
+    document.documentElement.removeAttribute('theme-mode')
+    mode.value = 'light'
   }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+<style scoped>
+header {
+  line-height: 1.5;
+}
+
+.logo {
+  display: block;
+  margin: 0 auto 2rem;
+}
+
+@media (min-width: 1024px) {
+  header {
+    display: flex;
+    place-items: center;
+    padding-right: calc(var(--section-gap) / 2);
+  }
+
+  .logo {
+    margin: 0 2rem 0 0;
+  }
+
+  header .wrapper {
+    display: flex;
+    place-items: flex-start;
+    flex-wrap: wrap;
+  }
 }
 </style>
